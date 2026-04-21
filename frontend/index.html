@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ScamShield — Malaysian Fraud Intelligence Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #080b10;
+      --surface:   #0d1117;
+      --surface2:  #161c26;
+      --surface3:  #1e2736;
+      --border:    #1f2d3d;
+      --border2:   #2a3a50;
+      --amber:     #f59e0b;
+      --amber-dim: #92610a;
+      --amber-glow:rgba(245,158,11,0.12);
+      --red:       #ef4444;
+      --red-dim:   rgba(239,68,68,0.12);
+      --green:     #22c55e;
+      --green-dim: rgba(34,197,94,0.10);
+      --blue:      #3b82f6;
+      --blue-dim:  rgba(59,130,246,0.10);
+      --text:      #d4dae4;
+      --text-dim:  #6b7a90;
+      --text-faint:#3a4558;
+      --font-d:    'Bebas Neue', sans-serif;
+      --font-b:    'IBM Plex Sans', sans-serif;
+      --font-m:    'IBM Plex Mono', monospace;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+
+    body{
+      background:var(--bg);
+      color:var(--text);
+      font-family:var(--font-b);
+      min-height:100vh;
+      overflow-x:hidden;
+    }
+
+    /* Scanline overlay */
+    body::after{
+      content:'';
+      position:fixed;
+      inset:0;
+      background:repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events:none;
+      z-index:9999;
+    }
+
+    /* ── LAYOUT ── */
+    .shell{display:flex;min-height:100vh}
+
+    /* SIDEBAR */
+    .sidebar{
+      width:220px;
+      flex-shrink:0;
+      background:var(--surface);
+      border-right:1px solid var(--border);
+      display:flex;
+      flex-direction:column;
+      position:fixed;
+      top:0;left:0;bottom:0;
+      z-index:100;
+    }
+
+    .logo-wrap{
+      padding:24px 20px 20px;
+      border-bottom:1px solid var(--border);
+    }
+    .logo{
+      font-family:var(--font-d);
+      font-size:1.7rem;
+      letter-spacing:0.05em;
+      color:#fff;
+      line-height:1;
+    }
+    .logo span{color:var(--amber)}
+    .logo-sub{
+      font-family:var(--font-m);
+      font-size:9px;
+      letter-spacing:0.15em;
+      color:var(--text-dim);
+      text-transform:uppercase;
+      margin-top:4px;
+    }
+
+    .nav{flex:1;padding:16px 0}
+    .nav-section{
+      font-family:var(--font-m);
+      font-size:9px;
+      letter-spacing:0.15em;
+      color:var(--text-faint);
+      text-transform:uppercase;
+      padding:8px 20px 6px;
+    }
+    .nav-item{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 20px;
+      cursor:pointer;
+      font-size:0.85rem;
+      font-weight:500;
+      color:var(--text-dim);
+      border-left:2px solid transparent;
+      transition:all 0.15s;
+      user-select:none;
+    }
+    .nav-item:hover{background:var(--surface2);color:var(--text)}
+    .nav-item.active{
+      background:var(--amber-glow);
+      color:var(--amber);
+      border-left-color:var(--amber);
+    }
+    .nav-icon{font-size:1rem;width:18px;text-align:center}
+
+    .sidebar-footer{
+      padding:16px 20px;
+      border-top:1px solid var(--border);
+    }
+    .status-dot{
+      display:inline-block;
+      width:6px;height:6px;
+      background:var(--green);
+      border-radius:50%;
+      margin-right:6px;
+      animation:blink 2s infinite;
+    }
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+    .status-text{
+      font-family:var(--font-m);
+      font-size:10px;
+      color:var(--text-dim);
+    }
+
+    /* MAIN */
+    .main{
+      margin-left:220px;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* TOPBAR */
+    .topbar{
+      background:var(--surface);
+      border-bottom:1px solid var(--border);
+      padding:0 32px;
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      position:sticky;top:0;z-index:50;
+    }
+    .topbar-title{
+      font-family:var(--font-m);
+      font-size:11px;
+      letter-spacing:0.1em;
+      color:var(--text-dim);
+      text-transform:uppercase;
+    }
+    .topbar-right{display:flex;align-items:center;gap:16px}
+    .badge{
+      background:var(--red-dim);
+      border:1px solid rgba(239,68,68,0.25);
+      border-radius:4px;
+      color:var(--red);
+      font-family:var(--font-m);
+      font-size:10px;
+      padding:3px 8px;
+      letter-spacing:0.05em;
+    }
+    .time-display{
+      font-family:var(--font-m);
+      font-size:11px;
+      color:var(--text-dim);
+    }
+
+    /* PAGES */
+    .page{display:none;padding:32px;animation:fadeIn 0.2s ease}
+    .page.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    /* PAGE HEADERS */
+    .page-header{margin-bottom:28px}
+    .page-title{
+      font-family:var(--font-d);
+      font-size:2.2rem;
+      letter-spacing:0.04em;
+      color:#fff;
+      line-height:1;
+    }
+    .page-title span{color:var(--amber)}
+    .page-desc{
+      font-family:var(--font-m);
+      font-size:11px;
+      color:var(--text-dim);
+      margin-top:6px;
+      letter-spacing:0.05em;
+    }
+
+    /* STAT CARDS ROW */
+    .stats-row{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:16px;
+      margin-bottom:24px;
+    }
+    .stat-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:20px;
+      position:relative;
+      overflow:hidden;
+    }
+    .stat-card::before{
+      content:'';
+      position:absolute;
+      top:0;left:0;right:0;height:2px;
+    }
+    .stat-card.amber::before{background:var(--amber)}
+    .stat-card.red::before{background:var(--red)}
+    .stat-card.green::before{background:var(--green)}
+    .stat-card.blue::before{background:var(--blue)}
+
+    .stat-label{
+      font-family:var(--font-m);
+      font-size:9px;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      color:var(--text-dim);
+      margin-bottom:10px;
+    }
+    .stat-value{
+      font-family:var(--font-d);
+      font-size:2.2rem;
+      letter-spacing:0.02em;
+      color:#fff;
+      line-height:1;
+    }
+    .stat-card.amber .stat-value{color:var(--amber)}
+    .stat-card.red .stat-value{color:var(--red)}
+    .stat-card.green .stat-value{color:var(--green)}
+    .stat-card.blue .stat-value{color:var(--blue)}
+    .stat-sub{
+      font-family:var(--font-m);
+      font-size:10px;
+      color:var(--text-dim);
+      margin-top:6px;
+    }
+
+    /* GRID LAYOUTS */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .grid-3{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+
+    /* PANELS */
+    .panel{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:8px;
+      overflow:hidden;
+    }
+    .panel-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:16px 20px;
+      border-bottom:1px solid var(--border);
+      background:var(--surface2);
+    }
+    .panel-title{
+      font-family:var(--font-m);
+      font-size:10px;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+      color:var(--text-dim);
+    }
+    .panel-badge{
+      font-family:var(--font-m);
+      font-size:9px;
+      background:var(--amber-glow);
+      border:1px solid rgba(245,158,11,0.2);
+      color:var(--amber);
+      border-radius:3px;
+      padding:2px 6px;
+    }
+    .panel-body{padding:20px}
+
+    /* ── ANALYSE PAGE ── */
+    .analyse-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:20px;
+      align-items:start;
+    }
+
+    .type-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+    .type-chip{
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:4px;
+      color:var(--text-dim);
+      font-family:var(--font-m);
+      font-size:11px;
+      padding:6px 14px;
+      cursor:pointer;
+      transition:all 0.15s;
+      letter-spacing:0.05em;
+    }
+    .type-chip:hover{border-color:var(--amber);color:var(--amber)}
+    .type-chip.active{
+      background:var(--amber-glow);
+      border-color:var(--amber);
+      color:var(--amber);
+    }
+
+    .field-label{
+      font-family:var(--font-m);
+      font-size:9px;
+      letter-spacing:0.15em;
+      text-transform:uppercase;
+      color:var(--text-dim);
+      margin-bottom:8px;
+    }
+
+    textarea{
+      width:100%;
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:6px;
+      color:var(--text);
+      font-family:var(--font-m);
+      font-size:12px;
+      line-height:1.8;
+      padding:14px;
+      resize:vertical;
+      min-height:180px;
+      outline:none;
+      transition:border-color 0.15s;
+    }
+    textarea::placeholder{color:var(--text-faint)}
+    textarea:focus{border-color:var(--amber-dim)}
+
+    .examples-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+    .ex-chip{
+      background:var(--surface3);
+      border:1px solid var(--border);
+      border-radius:3px;
+      color:var(--text-dim);
+      font-family:var(--font-m);
+      font-size:10px;
+      padding:4px 10px;
+      cursor:pointer;
+      transition:all 0.15s;
+    }
+    .ex-chip:hover{border-color:var(--border2);color:var(--text)}
+
+    .btn-primary{
+      width:100%;
+      margin-top:16px;
+      background:var(--amber);
+      border:none;
+      border-radius:6px;
+      color:#000;
+      font-family:var(--font-d);
+      font-size:1.1rem;
+      letter-spacing:0.08em;
+      padding:14px;
+      cursor:pointer;
+      transition:all 0.15s;
+    }
+    .btn-primary:hover:not(:disabled){
+      background:#fbbf24;
+      box-shadow:0 0 24px rgba(245,158,11,0.35);
+    }
+    .btn-primary:disabled{opacity:0.4;cursor:not-allowed}
+
+    /* RESULT DISPLAY */
+    .result-empty{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      height:300px;
+      color:var(--text-faint);
+      font-family:var(--font-m);
+      font-size:11px;
+      letter-spacing:0.1em;
+      text-align:center;
+      gap:12px;
+    }
+    .result-empty-icon{font-size:2.5rem;opacity:0.3}
+
+    .result-box{animation:fadeIn 0.3s ease}
+
+    .risk-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:20px;
+      padding-bottom:20px;
+      border-bottom:1px solid var(--border);
+    }
+    .risk-level-display{
+      font-family:var(--font-d);
+      font-size:3rem;
+      letter-spacing:0.05em;
+      line-height:1;
+    }
+    .risk-level-display.HIGH{color:var(--red)}
+    .risk-level-display.MEDIUM{color:var(--amber)}
+    .risk-level-display.LOW{color:var(--green)}
+
+    .risk-meta{text-align:right}
+    .risk-score-big{
+      font-family:var(--font-d);
+      font-size:2.2rem;
+      color:#fff;
+      line-height:1;
+    }
+    .risk-score-label{
+      font-family:var(--font-m);
+      font-size:9px;
+      color:var(--text-dim);
+      letter-spacing:0.1em;
+      text-transform:uppercase;
+    }
+
+    .score-track{
+      height:4px;
+      background:var(--surface3);
+      border-radius:2px;
+      margin-bottom:20px;
+      overflow:hidden;
+    }
+    .score-fill{
+      height:100%;
+      border-radius:2px;
+      transition:width 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .score-fill.HIGH{background:var(--red)}
+    .score-fill.MEDIUM{background:var(--amber)}
+    .score-fill.LOW{background:var(--green)}
+
+    .verdict-text{
+      font-size:0.95rem;
+      font-weight:500;
+      color:#fff;
+      margin-bottom:8px;
+      line-height:1.5;
+    }
+    .explanation-text{
+      font-family:var(--font-m);
+      font-size:11px;
+      color:var(--text-dim);
+      line-height:1.8;
+      margin-bottom:20px;
+    }
+
+    .tag-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+    .scam-tag{
+      background:rgba(59,130,246,0.1);
+      border:1px solid rgba(59,130,246,0.2);
+      border-radius:3px;
+      color:#93c5fd;
+      font-family:var(--font-m);
+      font-size:10px;
+      padding:3px 8px;
+      letter-spacing:0.05em;
+    }
+
+    .flags-list,.advice-list{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+    .flag-item{
+      display:flex;gap:10px;
+      background:var(--red-dim);
+      border:1px solid rgba(239,68,68,0.15);
+      border-radius:4px;
+      padding:8px 12px;
+      font-family:var(--font-m);
+      font-size:11px;
+      color:#fca5a5;
+      line-height:1.5;
+      align-items:flex-start;
+    }
+    .advice-item{
+      display:flex;gap:10px;
+      background:var(--green-dim);
+      border:1px solid rgba(34,197,94,0.15);
+      border-radius:4px;
+      padding:8px 12px;
+      font-family:var(--font-m);
+      font-size:11px;
+      color:#86efac;
+      line-height:1.5;
+      align-items:flex-start;
+    }
+    .item-num{
+      font-weight:600;
+      flex-shrink:0;
+      opacity:0.6;
+    }
+
+    .loading-state{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      height:300px;
+      gap:16px;
+    }
+    .loader-ring{
+      width:40px;height:40px;
+      border:2px solid var(--border2);
+      border-top-color:var(--amber);
+      border-radius:50%;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loader-text{
+      font-family:var(--font-m);
+      font-size:11px;
+      color:var(--text-dim);
+      letter-spacing:0.1em;
+    }
+
+    /* ── HISTORY PAGE ── */
+    .history-table{width:100%;border-collapse:collapse}
+    .history-table th{
+      font-family:var(--font-m);
+      font-size:9px;
+      letter-spacing:0.12em;
+      text-transform:uppercase;
+      color:var(--text-dim);
+      padding:10px 16px;
+      text-align:left;
+      border-bottom:1px solid var(--border);
+      background:var(--surface2);
+    }
+    .history-table td{
+      padding:12px 16px;
+      border-bottom:1px solid var(--border);
+      font-family:var(--font-m);
+      font-size:11px;
+      color:var(--text);
+      vertical-align:top;
+    }
+    .history-table tr:hover td{background:var(--surface2)}
+    .history-table tr:last-child td{border-bottom:none}
+
+    .risk-pill{
+      display:inline-block;
+      border-radius:3px;
+      font-family:var(--font-m);
+      font-size:9px;
+      font-weight:600;
+      letter-spacing:0.08em;
+      padding:2px 8px;
+    }
+    .risk-pill.HIGH{background:var(--red-dim);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+    .risk-pill.MEDIUM{background:var(--amber-glow);color:var(--amber);border:1px solid rgba(245,158,11,0.2)}
+    .risk-pill.LOW{background:var(--green-dim);color:var(--green);border:1px solid rgba(34,197,94,0.2)}
+
+    .msg-preview{
+      max-width:280px;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      color:var(--text-dim);
+    }
+
+    .empty-table{
+      text-align:center;
+      padding:60px 20px;
+      font-family:var(--font-m);
+      font-size:11px;
+      color:var(--text-faint);
+      letter-spacing:0.08em;
+    }
+
+    .btn-clear{
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:4px;
+      color:var(--text-dim);
+      font-family:var(--font-m);
+      font-size:10px;
+      padding:6px 12px;
+      cursor:pointer;
+      transition:all 0.15s;
+      letter-spacing:0.05em;
+    }
+    .btn-clear:hover{border-color:var(--red);color:var(--red)}
+
+    /* ── NEWS PAGE ── */
+    .news-grid{display:flex;flex-direction:column;gap:1px;background:var(--border)}
+    .news-item{
+      background:var(--surface);
+      padding:16px 20px;
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+      transition:background 0.15s;
+      cursor:pointer;
+      text-decoration:none;
+    }
+    .news-item:hover{background:var(--surface2)}
+    .news-num{
+      font-family:var(--font-d);
+      font-size:1.4rem;
+      color:var(--text-faint);
+      flex-shrink:0;
+      width:28px;
+      text-align:right;
+      padding-top:2px;
+    }
+    .news-body{flex:1}
+    .news-title{
+      font-size:0.9rem;
+      font-weight:500;
+      color:var(--text);
+      line-height:1.4;
+      margin-bottom:6px;
+    }
+    .news-meta{
+      font-family:var(--font-m);
+      font-size:10px;
+      color:var(--text-dim);
+      display:flex;
+      gap:12px;
+    }
+    .news-source{color:var(--amber)}
+
+    .news-loading{
+      padding:40px;
+      text-align:center;
+      font-family:var(--font-m);
+      font-size:11px;
+      color:var(--text-dim);
+      letter-spacing:0.08em;
+    }
+
+    /* ── PHONE PAGE ── */
+    .phone-input-row{display:flex;gap:12px;margin-bottom:20px}
+    .phone-input{
+      flex:1;
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:6px;
+      color:var(--text);
+      font-family:var(--font-m);
+      font-size:14px;
+      padding:12px 16px;
+      outline:none;
+      transition:border-color 0.15s;
+      letter-spacing:0.05em;
+    }
+    .phone-input:focus{border-color:var(--amber-dim)}
+    .phone-input::placeholder{color:var(--text-faint)}
+
+    .btn-check{
+      background:var(--amber);
+      border:none;
+      border-radius:6px;
+      color:#000;
+      font-family:var(--font-d);
+      font-size:1rem;
+      letter-spacing:0.08em;
+      padding:12px 24px;
+      cursor:pointer;
+      transition:all 0.15s;
+      white-space:nowrap;
+    }
+    .btn-check:hover:not(:disabled){
+      background:#fbbf24;
+      box-shadow:0 0 20px rgba(245,158,11,0.3);
+    }
+    .btn-check:disabled{opacity:0.4;cursor:not-allowed}
+
+    .phone-result{
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:6px;
+      padding:20px;
+      animation:fadeIn 0.3s ease;
+    }
+
+    /* ── CHART (mini bar) ── */
+    .mini-chart{display:flex;align-items:flex-end;gap:6px;height:60px;padding:0 4px}
+    .bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+    .bar{
+      width:100%;
+      border-radius:3px 3px 0 0;
+      background:var(--amber);
+      opacity:0.7;
+      min-height:4px;
+      transition:height 0.6s ease;
+    }
+    .bar.red{background:var(--red)}
+    .bar.green{background:var(--green)}
+    .bar-lbl{
+      font-family:var(--font-m);
+      font-size:8px;
+      color:var(--text-dim);
+      letter-spacing:0.05em;
+    }
+
+    /* DIVIDER */
+    .divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-track{background:var(--surface)}
+    ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+    /* RESPONSIVE tweaks */
+    @media(max-width:900px){
+      .sidebar{width:180px}
+      .main{margin-left:180px}
+      .stats-row{grid-template-columns:1fr 1fr}
+      .analyse-grid,.grid-2,.grid-3{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-wrap">
+      <div class="logo">Scam<span>Shield</span></div>
+      <div class="logo-sub">MY Fraud Intelligence</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Intelligence</div>
+      <div class="nav-item active" onclick="navigate('dashboard')">
+        <span class="nav-icon">◈</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="navigate('analyse')">
+        <span class="nav-icon">⟐</span> Analyse Message
+      </div>
+      <div class="nav-item" onclick="navigate('phone')">
+        <span class="nav-icon">⊕</span> Phone Checker
+      </div>
+      <div class="nav-section">Records</div>
+      <div class="nav-item" onclick="navigate('history')">
+        <span class="nav-icon">≡</span> Scan History
+      </div>
+      <div class="nav-item" onclick="navigate('news')">
+        <span class="nav-icon">◎</span> Live Scam News
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div><span class="status-dot"></span><span class="status-text">GEMINI FLASH LATEST ONLINE</span></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">DASHBOARD OVERVIEW</div>
+      <div class="topbar-right">
+        <div class="badge">⚠ SCAM ALERT ACTIVE</div>
+        <div class="time-display" id="clock">--:--:--</div>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-title">THREAT <span>OVERVIEW</span></div>
+        <div class="page-desc">// REAL-TIME SCAM INTELLIGENCE · MALAYSIA REGION</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card amber">
+          <div class="stat-label">Total Scans</div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-sub">Messages analysed</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">High Risk</div>
+          <div class="stat-value" id="stat-high">0</div>
+          <div class="stat-sub">Confirmed threats</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Safe</div>
+          <div class="stat-value" id="stat-low">0</div>
+          <div class="stat-sub">Cleared messages</div>
+        </div>
+        <div class="stat-card blue">
+          <div class="stat-label">Detection Rate</div>
+          <div class="stat-value" id="stat-rate">—</div>
+          <div class="stat-sub">Accuracy</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Recent Scans -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Recent Scans</div>
+            <div class="panel-badge" id="recent-count">0 RECORDS</div>
+          </div>
+          <div id="recent-scans">
+            <div class="empty-table">NO SCANS YET — RUN YOUR FIRST ANALYSIS</div>
+          </div>
+        </div>
+
+        <!-- Risk Breakdown -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Risk Distribution</div>
+          </div>
+          <div class="panel-body">
+            <div id="risk-chart" class="mini-chart" style="margin-bottom:20px">
+              <div class="bar-wrap"><div class="bar red" id="bar-high" style="height:4px"></div><div class="bar-lbl">HIGH</div></div>
+              <div class="bar-wrap"><div class="bar" id="bar-med" style="height:4px"></div><div class="bar-lbl">MED</div></div>
+              <div class="bar-wrap"><div class="bar green" id="bar-low" style="height:4px"></div><div class="bar-lbl">LOW</div></div>
+            </div>
+            <hr class="divider"/>
+            <div class="stat-label" style="margin-bottom:12px">Common Scam Types Detected</div>
+            <div id="scam-types-list">
+              <div style="font-family:var(--font-m);font-size:11px;color:var(--text-faint)">No data yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ANALYSE ── -->
+    <div class="page" id="page-analyse">
+      <div class="page-header">
+        <div class="page-title">ANALYSE <span>MESSAGE</span></div>
+        <div class="page-desc">// PASTE ANY SUSPICIOUS SMS · WHATSAPP · EMAIL</div>
+      </div>
+      <div class="analyse-grid">
+        <!-- Input -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Message Input</div>
+            <div class="panel-badge">GEMINI FLASH LATEST</div>
+          </div>
+          <div class="panel-body">
+            <div class="field-label">Message Type</div>
+            <div class="type-row">
+              <div class="type-chip active" onclick="selectType(this,'SMS')">SMS</div>
+              <div class="type-chip" onclick="selectType(this,'WhatsApp')">WHATSAPP</div>
+              <div class="type-chip" onclick="selectType(this,'Email')">EMAIL</div>
+              <div class="type-chip" onclick="selectType(this,'Other')">OTHER</div>
+            </div>
+            <div class="field-label">Suspicious Content</div>
+            <textarea id="msgInput" placeholder="Paste the suspicious message here...&#10;&#10;e.g. 'Tahniah! Akaun Maybank anda telah memenangi RM5,000...'"></textarea>
+            <div class="field-label" style="margin-top:12px">Quick Examples</div>
+            <div class="examples-row">
+              <div class="ex-chip" onclick="loadEx('maybank')">Maybank phish</div>
+              <div class="ex-chip" onclick="loadEx('prize')">Lucky draw</div>
+              <div class="ex-chip" onclick="loadEx('parcel')">Parcel scam</div>
+              <div class="ex-chip" onclick="loadEx('job')">Fake job</div>
+              <div class="ex-chip" onclick="loadEx('legit')">Legit OTP</div>
+            </div>
+            <button class="btn-primary" id="analyseBtn" onclick="runAnalysis()">▶ RUN ANALYSIS</button>
+          </div>
+        </div>
+
+        <!-- Result -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Analysis Result</div>
+            <div class="panel-badge" id="result-status">AWAITING INPUT</div>
+          </div>
+          <div class="panel-body" id="result-panel">
+            <div class="result-empty">
+              <div class="result-empty-icon">⟐</div>
+              <div>PASTE A MESSAGE AND RUN ANALYSIS<br>TO SEE RESULTS HERE</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PHONE CHECKER ── -->
+    <div class="page" id="page-phone">
+      <div class="page-header">
+        <div class="page-title">PHONE <span>CHECKER</span></div>
+        <div class="page-desc">// ANALYSE SUSPICIOUS PHONE NUMBERS · POWERED BY GEMINI AI</div>
+      </div>
+      <div class="grid-3">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Number Risk Analysis</div>
+            <div class="panel-badge">AI REASONING</div>
+          </div>
+          <div class="panel-body">
+            <div class="field-label">Phone Number</div>
+            <div class="phone-input-row">
+              <input type="tel" class="phone-input" id="phoneInput" placeholder="+60 11-XXXX XXXX or 03-XXXX XXXX"/>
+              <button class="btn-check" id="phoneBtn" onclick="checkPhone()">CHECK</button>
+            </div>
+            <div class="field-label">Example Numbers to Try</div>
+            <div class="examples-row" style="margin-bottom:16px">
+              <div class="ex-chip" onclick="loadPhone('1800-88-2020')">BNM Hotline</div>
+              <div class="ex-chip" onclick="loadPhone('+60 11-2345 6789')">Unknown MY</div>
+              <div class="ex-chip" onclick="loadPhone('+44 7700 900123')">UK Number</div>
+              <div class="ex-chip" onclick="loadPhone('03-2161 4566')">Maybank HQ</div>
+            </div>
+            <div id="phone-result">
+              <div class="result-empty" style="height:200px">
+                <div class="result-empty-icon">⊕</div>
+                <div>ENTER A NUMBER TO CHECK</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><div class="panel-title">Known Scam Prefixes</div></div>
+          <div class="panel-body">
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="font-family:var(--font-m);font-size:10px;color:var(--text-dim)">HIGH RISK PATTERNS</div>
+              <div id="prefixList"></div>
+              <div style="font-family:var(--font-m);font-size:9px;color:var(--text-faint);margin-top:8px;letter-spacing:0.05em">SOURCE: MCMC · PDRM SCAM ALERT</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div class="page" id="page-history">
+      <div class="page-header">
+        <div class="page-title">SCAN <span>HISTORY</span></div>
+        <div class="page-desc">// ALL MESSAGES ANALYSED IN THIS SESSION</div>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Analysis Log</div>
+          <button class="btn-clear" onclick="clearHistory()">CLEAR ALL</button>
+        </div>
+        <div id="history-table-wrap">
+          <div class="empty-table">NO ANALYSIS HISTORY YET</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NEWS ── -->
+    <div class="page" id="page-news">
+      <div class="page-header">
+        <div class="page-title">LIVE SCAM <span>INTELLIGENCE</span></div>
+        <div class="page-desc">// REAL-TIME NEWS · POWERED BY GOOGLE NEWS RSS</div>
+      </div>
+      <div class="grid-2" style="align-items:start">
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">Malaysia Scam News Feed</div>
+            <div class="panel-badge" id="news-count">LOADING...</div>
+          </div>
+          <div id="news-feed"><div class="news-loading">⟳ FETCHING LIVE FEED...</div></div>
+        </div>
+        <div>
+          <div class="panel" style="margin-bottom:20px">
+            <div class="panel-header"><div class="panel-title">Emergency Contacts</div></div>
+            <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
+              <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px">
+  <div style="font-family:var(--font-d);font-size:1.3rem;color:var(--red)">997</div>
+  <div style="font-family:var(--font-m);font-size:10px;color:var(--text-dim);margin-top:2px">National Scam Response Centre (NSRC)</div>
+</div>
+
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px">
+  <div style="font-family:var(--font-d);font-size:1.3rem;color:var(--amber)">999</div>
+  <div style="font-family:var(--font-m);font-size:10px;color:var(--text-dim);margin-top:2px">Police Emergency</div>
+</div>
+
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px">
+  <div style="font-family:var(--font-d);font-size:1.3rem;color:var(--blue)">1-800-88-5465</div>
+  <div style="font-family:var(--font-m);font-size:10px;color:var(--text-dim);margin-top:2px">BNM BNMTELELINK</div>
+</div>
+
+<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px">
+  <div style="font-family:var(--font-d);font-size:1.3rem;color:var(--green)">03-2031 9200</div>
+  <div style="font-family:var(--font-m);font-size:10px;color:var(--text-dim);margin-top:2px">Cyber999 (CyberSecurity MY)</div>
+</div>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-header"><div class="panel-title">Scam Awareness</div></div>
+            <div class="panel-body">
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+  <span style="font-family:var(--font-m);font-size:10px;color:var(--text-dim)">Lost to scams in 2024</span>
+  <span style="font-family:var(--font-d);font-size:1.1rem;color:var(--amber)">RM1.2B+</span>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+  <span style="font-family:var(--font-m);font-size:10px;color:var(--text-dim)">Cases reported to PDRM</span>
+  <span style="font-family:var(--font-d);font-size:1.1rem;color:var(--amber)">70K+</span>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+  <span style="font-family:var(--font-m);font-size:10px;color:var(--text-dim)">Involve banking impersonation</span>
+  <span style="font-family:var(--font-d);font-size:1.1rem;color:var(--amber)">60%</span>
+</div>
+
+<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+  <span style="font-family:var(--font-m);font-size:10px;color:var(--text-dim)">Most targeted age group</span>
+  <span style="font-family:var(--font-d);font-size:1.1rem;color:var(--amber)">18-35</span>
+</div>
+              </div>
+              <div style="font-family:var(--font-m);font-size:9px;color:var(--text-faint);margin-top:12px">SOURCE: PDRM ANNUAL REPORT 2024 · BNM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let currentType = 'SMS';
+let history = JSON.parse(localStorage.getItem('scamshield_history') || '[]');
+
+const examples = {
+  maybank: "Akaun Maybank2u anda telah DIGANTUNG. Sila klik pautan ini untuk mengesahkan maklumat anda dalam masa 24 jam atau akaun akan ditutup: http://maybank-secure-verify.xyz/login",
+  prize: "Tahniah! Nombor telefon anda telah dipilih sebagai pemenang dalam peraduan Shopee 11.11. Hadiah: RM8,500 tunai. Hubungi Whatsapp: 011-2345678 untuk tuntutan dalam 48 jam.",
+  parcel: "Pihak Pos Malaysia: Bungkusan anda tidak dapat dihantar kerana alamat tidak lengkap. Kemaskini alamat anda: http://poslaju-update.com/track?id=MY123",
+  job: "JAWATAN KOSONG SEGERA! Kerja dari rumah. Gaji RM5,000-RM15,000 sebulan. Tiada pengalaman diperlukan. Modal RM200 sahaja. Hubungi sekarang: @easymoneyjob",
+  legit: "Dari: CIMB Bank. Kod OTP anda ialah 847291. Sah selama 5 minit. Jangan kongsi kod ini dengan sesiapa termasuk kakitangan bank."
+};
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('en-MY',{hour12:false});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Navigation
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  const items = document.querySelectorAll('.nav-item');
+  const labels = ['dashboard','analyse','phone','history','news'];
+  items[labels.indexOf(page)]?.classList.add('active');
+  const titles = {
+    dashboard:'DASHBOARD OVERVIEW',
+    analyse:'MESSAGE ANALYSIS',
+    phone:'PHONE NUMBER CHECKER',
+    history:'SCAN HISTORY LOG',
+    news:'LIVE SCAM INTELLIGENCE'
+  };
+  document.getElementById('topbar-title').textContent = titles[page] || '';
+  if (page === 'dashboard') refreshDashboard();
+  if (page === 'history') renderHistory();
+  if (page === 'news') loadNews();
+}
+
+// Type selector
+function selectType(el, type) {
+  document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentType = type;
+}
+
+function loadEx(key) { document.getElementById('msgInput').value = examples[key]; }
+function loadPhone(num) { document.getElementById('phoneInput').value = num; }
+
+// Analysis
+async function runAnalysis() {
+  const msg = document.getElementById('msgInput').value.trim();
+  if (!msg) return;
+  const btn = document.getElementById('analyseBtn');
+  btn.disabled = true;
+  document.getElementById('result-status').textContent = 'ANALYSING...';
+  document.getElementById('result-panel').innerHTML = `
+    <div class="loading-state">
+      <div class="loader-ring"></div>
+      <div class="loader-text">PROCESSING WITH GEMINI FLASH LATEST...</div>
+    </div>`;
+  try {
+    const res = await fetch(`${API}/analyse`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:msg, message_type:currentType})
+    });
+    if (!res.ok) throw new Error('Server error');
+    const data = await res.json();
+    renderResult(data, msg);
+    saveHistory(msg, currentType, data);
+  } catch(e) {
+    document.getElementById('result-panel').innerHTML = `
+      <div class="flag-item" style="margin-top:20px">
+        <span>⚠</span><span>ERROR: ${e.message}. Make sure the backend is running on port 8000.</span>
+      </div>`;
+    document.getElementById('result-status').textContent = 'ERROR';
+  }
+  btn.disabled = false;
+}
+
+function renderResult(d, msg) {
+  document.getElementById('result-status').textContent = d.risk_level + ' RISK';
+  const flagsHTML = (d.red_flags||[]).map(f=>`
+    <div class="flag-item"><span class="item-num">⚑</span><span>${f}</span></div>`).join('');
+  const adviceHTML = (d.advice||[]).map((a,i)=>`
+    <div class="advice-item"><span class="item-num">${i+1}.</span><span>${a}</span></div>`).join('');
+  document.getElementById('result-panel').innerHTML = `
+    <div class="result-box">
+      <div class="risk-header">
+        <div class="risk-level-display ${d.risk_level}">${d.risk_level}</div>
+        <div class="risk-meta">
+          <div class="risk-score-big">${d.risk_score}<span style="font-size:1rem;opacity:0.5">/100</span></div>
+          <div class="risk-score-label">RISK SCORE</div>
+        </div>
+      </div>
+      <div class="score-track">
+        <div class="score-fill ${d.risk_level}" style="width:${d.risk_score}%"></div>
+      </div>
+      ${d.scam_type?`<div class="tag-row"><div class="scam-tag">⊞ ${d.scam_type}</div></div>`:''}
+      <div class="verdict-text">${d.verdict}</div>
+      <div class="explanation-text">${d.explanation}</div>
+      ${flagsHTML?`<div class="field-label">RED FLAGS DETECTED</div><div class="flags-list">${flagsHTML}</div>`:''}
+      <div class="field-label">RECOMMENDED ACTIONS</div>
+      <div class="advice-list">${adviceHTML}</div>
+    </div>`;
+}
+
+// History
+function saveHistory(msg, type, result) {
+  history.unshift({
+    id: Date.now(),
+    ts: new Date().toLocaleString('en-MY'),
+    msg, type,
+    risk: result.risk_level,
+    score: result.risk_score,
+    scam_type: result.scam_type || '—',
+    verdict: result.verdict
+  });
+  localStorage.setItem('scamshield_history', JSON.stringify(history));
+}
+
+function renderHistory() {
+  const wrap = document.getElementById('history-table-wrap');
+  if (!history.length) {
+    wrap.innerHTML = '<div class="empty-table">NO ANALYSIS HISTORY YET — RUN YOUR FIRST SCAN</div>';
+    return;
+  }
+  wrap.innerHTML = `
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>TIME</th><th>TYPE</th><th>MESSAGE</th>
+          <th>SCAM TYPE</th><th>SCORE</th><th>RISK</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${history.map(h=>`
+        <tr>
+          <td style="white-space:nowrap;color:var(--text-dim)">${h.ts}</td>
+          <td><span style="font-family:var(--font-m);font-size:10px;color:var(--amber)">${h.type}</span></td>
+          <td><div class="msg-preview">${h.msg}</div></td>
+          <td style="color:var(--text-dim);font-size:10px">${h.scam_type}</td>
+          <td style="font-family:var(--font-d);font-size:1.1rem;color:var(--text)">${h.score}</td>
+          <td><span class="risk-pill ${h.risk}">${h.risk}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function clearHistory() {
+  if (!confirm('Clear all history?')) return;
+  history = [];
+  localStorage.removeItem('scamshield_history');
+  renderHistory();
+  refreshDashboard();
+}
+
+// Dashboard
+function refreshDashboard() {
+  const total = history.length;
+  const high = history.filter(h=>h.risk==='HIGH').length;
+  const med = history.filter(h=>h.risk==='MEDIUM').length;
+  const low = history.filter(h=>h.risk==='LOW').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-high').textContent = high;
+  document.getElementById('stat-low').textContent = low;
+  document.getElementById('stat-rate').textContent = total ? Math.round((high+med)/total*100)+'%' : '—';
+
+  // Chart
+  const max = Math.max(high, med, low, 1);
+  document.getElementById('bar-high').style.height = (high/max*56+4)+'px';
+  document.getElementById('bar-med').style.height = (med/max*56+4)+'px';
+  document.getElementById('bar-low').style.height = (low/max*56+4)+'px';
+
+  // Recent
+  document.getElementById('recent-count').textContent = total + ' RECORDS';
+  const recentEl = document.getElementById('recent-scans');
+  if (!total) {
+    recentEl.innerHTML = '<div class="empty-table">NO SCANS YET</div>';
+  } else {
+    recentEl.innerHTML = `
+      <table class="history-table">
+        <thead><tr><th>TIME</th><th>MESSAGE</th><th>RISK</th></tr></thead>
+        <tbody>
+          ${history.slice(0,6).map(h=>`
+          <tr>
+            <td style="white-space:nowrap;font-size:10px;color:var(--text-dim)">${h.ts}</td>
+            <td><div class="msg-preview" style="max-width:200px">${h.msg}</div></td>
+            <td><span class="risk-pill ${h.risk}">${h.risk}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // Scam types
+  const types = {};
+  history.forEach(h=>{ if(h.scam_type&&h.scam_type!=='—'&&h.scam_type!=='Not a scam') types[h.scam_type]=(types[h.scam_type]||0)+1; });
+  const typesEl = document.getElementById('scam-types-list');
+  const sorted = Object.entries(types).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  typesEl.innerHTML = sorted.length ? sorted.map(([t,c])=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-family:var(--font-m);font-size:11px;color:var(--text)">${t}</span>
+      <span style="font-family:var(--font-d);color:var(--amber)">${c}</span>
+    </div>`).join('')
+    : '<div style="font-family:var(--font-m);font-size:11px;color:var(--text-faint)">No scam types detected yet</div>';
+}
+
+// Phone Checker
+async function checkPhone() {
+  const num = document.getElementById('phoneInput').value.trim();
+  if (!num) return;
+  const btn = document.getElementById('phoneBtn');
+  btn.disabled = true;
+  document.getElementById('phone-result').innerHTML = `
+    <div class="loading-state" style="height:160px">
+      <div class="loader-ring"></div>
+      <div class="loader-text">ANALYSING NUMBER...</div>
+    </div>`;
+  try {
+    const res = await fetch(`${API}/check-phone`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({phone_number: num})
+    });
+    if (!res.ok) throw new Error('Server error');
+    const d = await res.json();
+    document.getElementById('phone-result').innerHTML = `
+      <div class="phone-result">
+        <div class="risk-header" style="margin-bottom:12px;padding-bottom:12px">
+          <div class="risk-level-display ${d.risk_level}" style="font-size:2rem">${d.risk_level}</div>
+          <div class="risk-meta">
+            <div class="risk-score-big" style="font-size:1.6rem">${d.risk_score}<span style="font-size:0.8rem;opacity:0.5">/100</span></div>
+            <div class="risk-score-label">RISK SCORE</div>
+          </div>
+        </div>
+        <div class="score-track"><div class="score-fill ${d.risk_level}" style="width:${d.risk_score}%"></div></div>
+        <div class="verdict-text" style="font-size:0.85rem">${d.verdict}</div>
+        <div class="explanation-text" style="margin-top:8px">${d.explanation}</div>
+        ${(d.advice||[]).map((a,i)=>`<div class="advice-item" style="margin-top:6px"><span class="item-num">${i+1}.</span><span>${a}</span></div>`).join('')}
+      </div>`;
+  } catch(e) {
+    document.getElementById('phone-result').innerHTML =
+      `<div class="flag-item"><span>⚠</span><span>Error: ${e.message}</span></div>`;
+  }
+  btn.disabled = false;
+}
+
+// News Feed
+async function loadNews() {
+  const feed = document.getElementById('news-feed');
+  const count = document.getElementById('news-count');
+  feed.innerHTML = '<div class="news-loading">⟳ FETCHING LIVE FEED...</div>';
+  try {
+    const res = await fetch(`${API}/news`);
+    if (!res.ok) throw new Error('Failed to fetch');
+    const items = await res.json();
+    count.textContent = items.length + ' ARTICLES';
+    if (!items.length) {
+      feed.innerHTML = '<div class="news-loading">NO ARTICLES FOUND</div>';
+      return;
+    }
+    feed.innerHTML = `<div class="news-grid">
+      ${items.map((item, i) => `
+        <a class="news-item" href="${item.link}" target="_blank" rel="noopener">
+          <div class="news-num">${String(i+1).padStart(2,'0')}</div>
+          <div class="news-body">
+            <div class="news-title">${item.title}</div>
+            <div class="news-meta">
+              <span class="news-source">${item.source}</span>
+              <span>${item.pubDate}</span>
+            </div>
+          </div>
+        </a>`).join('')}
+    </div>`;
+  } catch(e) {
+    feed.innerHTML = `<div class="news-loading">FAILED TO LOAD FEED — ${e.message}</div>`;
+    count.textContent = 'ERROR';
+  }
+}
+
+// FIXED PREFIX LIST
+const prefixes = [
+  "+60 15",
+  "+60 16 (foreign routed)",
+  "+1",
+  "+44",
+  "+62 (Indonesia)",
+  "Private Number",
+  "000-XXX"
+];
+
+document.getElementById("prefixList").innerHTML =
+  prefixes.map(p => `
+    <div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--surface2);border-radius:4px;border:1px solid var(--border)">
+      <span style="color:var(--red);font-size:0.8rem">⚑</span>
+      <span style="font-family:var(--font-m);font-size:11px;color:var(--text)">${p}</span>
+    </div>
+  `).join('');
+
+// Init
+refreshDashboard();
+</script>
+</body>
+</html>
