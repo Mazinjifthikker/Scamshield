@@ -1,8 +1,8 @@
-\# ScamShield — AI Scam Detection System (Malaysia)
+\ScamShield — AI Scam Detection System (Malaysia)
 
 
 
-\## Overview
+\# Overview
 
 
 
@@ -14,7 +14,7 @@ ScamShield is a lightweight fraud detection system designed to help Malaysians i
 
 
 
-\## Problem
+\# Problem
 
 
 
@@ -40,7 +40,7 @@ Most users cannot quickly determine whether a message is safe, which leads to fi
 
 
 
-\## Solution
+\# Solution
 
 
 
@@ -64,7 +64,7 @@ The goal is to give users a \*\*quick and understandable risk assessment\*\* bef
 
 
 
-\## System Design
+\# System Design
 
 
 
@@ -72,7 +72,7 @@ The system does not rely on AI alone. It uses a two-stage workflow:
 
 
 
-\### 1. Rule-Based Analysis
+\## 1. Rule-Based Analysis
 
 
 
@@ -94,7 +94,7 @@ It also checks the message against known scam patterns.
 
 
 
-\### 2. AI Analysis (Gemini)
+\## 2. AI Analysis (Gemini)
 
 
 
@@ -110,7 +110,7 @@ The extracted signals are passed into Gemini, which:
 
 
 
-\### 3. Final Decision
+\## 3. Final Decision
 
 
 
@@ -122,7 +122,7 @@ The system combines rule-based signals with AI output to produce a final risk sc
 
 
 
-\## Features
+\# Features
 
 
 
@@ -142,7 +142,7 @@ The system combines rule-based signals with AI output to produce a final risk sc
 
 
 
-\## Technology Stack
+\# Technology Stack
 
 
 
@@ -160,7 +160,7 @@ The system combines rule-based signals with AI output to produce a final risk sc
 
 
 
-\## Security
+\# Security
 
 
 
@@ -220,7 +220,7 @@ Open the frontend by launching `index.html`.
 
 
 
-\## Impact
+\# Impact
 
 
 
@@ -240,7 +240,7 @@ ScamShield helps users make safer decisions by:
 
 
 
-\## Hackathon Track
+\# Hackathon Track
 
 
 
@@ -252,7 +252,7 @@ Track 5 — Secure Digital (FinTech \& Security)
 
 
 
-\## Notes
+\# Notes
 
 
 
