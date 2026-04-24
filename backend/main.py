@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 import google.generativeai as genai
 import os, json, re
@@ -151,27 +152,22 @@ def ensure_model():
         raise HTTPException(500, "GOOGLE_API_KEY is missing. Add it to your .env file.")
 
 def extract_json_object(text: str) -> dict:
-    """Parse Gemini output more safely."""
     cleaned = re.sub(r"```json|```", "", text, flags=re.IGNORECASE).strip()
-
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         pass
-
     match = re.search(r"\{.*\}", cleaned, re.DOTALL)
     if match:
         try:
             return json.loads(match.group(0))
         except json.JSONDecodeError:
             pass
-
     raise json.JSONDecodeError("Could not parse JSON", cleaned, 0)
 
 
 def analyse_message_signals(message: str) -> dict:
     lower = message.lower()
-
     links = re.findall(r'https?://\S+|www\.\S+', message, flags=re.IGNORECASE)
     authorities = [term for term in AUTHORITY_TERMS if term in lower]
     urgency_hits = [term for term in URGENCY_TERMS if term in lower]
@@ -270,6 +266,16 @@ def clamp_score(value: int) -> int:
 
 
 # ── ENDPOINTS ───────────────────────────────────────
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_frontend():
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return HTMLResponse("<h1>ScamShield API is running</h1><p>Visit <a href='/docs'>/docs</a> to test the API.</p>")
+
+
 @app.get("/health")
 def health():
     return {
@@ -284,7 +290,6 @@ def health():
 @app.post("/analyse")
 async def analyse(req: AnalyseRequest):
     ensure_model()
-
     if not req.message.strip():
         raise HTTPException(400, "Message cannot be empty")
 
@@ -324,10 +329,7 @@ Message:
         merged_flags = list(dict.fromkeys(existing_flags + signals["rule_flags"]))
         data["red_flags"] = merged_flags[:6]
 
-        return {
-            **data,
-            "workflow_signals": signals
-        }
+        return {**data, "workflow_signals": signals}
     except json.JSONDecodeError:
         raise HTTPException(500, "Failed to parse AI response")
     except Exception as e:
@@ -337,7 +339,6 @@ Message:
 @app.post("/check-phone")
 async def check_phone(req: PhoneRequest):
     ensure_model()
-
     if not req.phone_number.strip():
         raise HTTPException(400, "Phone number cannot be empty")
 
@@ -364,7 +365,6 @@ Phone Number to analyse: {req.phone_number}
 
 @app.get("/news")
 async def get_news():
-    """Fetch real Malaysia scam news from Google News RSS"""
     feeds = [
         "https://news.google.com/rss/search?q=scam+Malaysia&hl=en-MY&gl=MY&ceid=MY:en",
         "https://news.google.com/rss/search?q=penipuan+Malaysia&hl=ms&gl=MY&ceid=MY:ms",
@@ -407,15 +407,9 @@ async def get_news():
                         "title": title,
                         "link": link,
                         "source": source,
-                        "source": source,
                         "pubDate": pub_fmt
                     })
         except Exception:
             continue
 
     return articles[:15]
-
-
-@app.get("/")
-def home():
-    return {"message": "ScamShield API is running 🚀"}
